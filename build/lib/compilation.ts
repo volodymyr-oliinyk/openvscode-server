@@ -5,7 +5,7 @@
 
 import es from 'event-stream';
 import fs from 'fs';
-import { gulp, bom, sourcemaps } from './gulp/facade.ts';
+import { gulp, bom, sourcemaps, replace } from './gulp/facade.ts';
 import path from 'path';
 import * as monacodts from './monaco-api.ts';
 import * as nls from './nls.ts';
@@ -22,6 +22,8 @@ import ts from 'typescript';
 import watch from './watch/index.ts';
 import * as tsb from './tsb/index.ts';
 import { createTsgoStream, spawnTsgo } from './tsgo.ts';
+import packageJson from '../../package.json' with { type: 'json' };
+import productJson from '../../product.json' with { type: 'json' };
 
 
 import { extractExtensionPointNamesFromFile } from './extractExtensionPoints.ts';
@@ -77,8 +79,21 @@ export function createCompile(src: string, { build, emitError, transpileOnly, pr
 		const isRuntimeJs = (f: File) => f.path.endsWith('.js') && !f.path.includes('fixtures');
 		const noDeclarationsFilter = util.filter(data => !(/\.d\.ts$/.test(data.path)));
 
+
+		const productJsFilter = util.filter(data => !build && data.path.endsWith('vs/platform/product/common/product.ts'));
+		const productConfiguration = JSON.stringify({
+			...productJson,
+			version: `${packageJson.version}-dev`,
+			nameShort: `${productJson.nameShort} Dev`,
+			nameLong: `${productJson.nameLong} Dev`,
+			dataFolderName: `${productJson.dataFolderName}-dev`
+		});
+
 		const input = es.through();
 		const output = input
+			.pipe(productJsFilter)
+			.pipe(replace(/{\s*\/\*BUILD->INSERT_PRODUCT_CONFIGURATION\*\/\s*}/, productConfiguration, { skipBinary: true }))
+			.pipe(productJsFilter.restore)
 			.pipe(util.$if(isUtf8Test, bom())) // this is required to preserve BOM in test files that loose it otherwise
 			.pipe(util.$if(!build && isRuntimeJs, util.appendOwnPathSourceURL()))
 			.pipe(tsFilter)
