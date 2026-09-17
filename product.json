@@ -1311,5 +1311,15 @@
 	},
 	"linkProtectionTrustedDomains": [
 		"https://open-vsx.org"
-	]
+	],
+	"agentSdks": {
+		"claude": {
+			"version": "0.3.258",
+			"urlTemplate": "https://main.vscode-cdn.net/agent-sdk/claude/0.3.258/{sdkTarget}.tgz"
+		},
+		"codex": {
+			"version": "0.153.0",
+			"urlTemplate": "https://main.vscode-cdn.net/agent-sdk/codex/0.153.0/{sdkTarget}.tgz"
+		}
+	}
 }
