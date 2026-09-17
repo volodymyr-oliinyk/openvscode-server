@@ -271,6 +271,14 @@
 				}
 			]
 		},
+		"microsoft-aspire.aspire-vscode": {
+			"onFileOpen": [
+				{
+					"pathGlob": "{**/apphost.cs,**/apphost.js,**/apphost.ts,**/apphost.py,**/AppHost.java,**/aspire.config.json,**/.aspire/settings.json}",
+					"important": true
+				}
+			]
+		},
 		"ms-python.python": {
 			"onFileOpen": [
 				{
@@ -356,20 +364,37 @@
 				}
 			]
 		},
-		"ms-azuretools.vscode-docker": {
+		"typespec.typespec-vscode": {
+			"onFileOpen": [
+				{
+					"pathGlob": "{**/*.tsp,**/tspconfig.yaml}",
+					"important": true
+				}
+			]
+		},
+		"ms-azuretools.vscode-containers": {
 			"onFileOpen": [
 				{
 					"pathGlob": "{**/dockerfile,**/Dockerfile,**/docker-compose.yml,**/docker-compose.*.yml}",
-					"important": true
+					"important": true,
+					"whenNotInstalled": [
+						"ms-azuretools.vscode-docker"
+					]
 				},
 				{
 					"languages": [
 						"dockerfile"
 					],
-					"important": true
+					"important": true,
+					"whenNotInstalled": [
+						"ms-azuretools.vscode-docker"
+					]
 				},
 				{
-					"pathGlob": "{**/*.cs,**/project.json,**/global.json,**/*.csproj,**/*.cshtml,**/*.sln,**/appsettings.json,**/*.py,**/*.ipynb,**/*.js,**/*.ts,**/package.json}"
+					"pathGlob": "{**/*.cs,**/project.json,**/global.json,**/*.csproj,**/*.cshtml,**/*.sln,**/appsettings.json,**/*.py,**/*.ipynb,**/*.js,**/*.ts,**/package.json}",
+					"whenNotInstalled": [
+						"ms-azuretools.vscode-docker"
+					]
 				}
 			]
 		},
@@ -406,41 +431,6 @@
 				{
 					"pathGlob": "{**/CMakeLists.txt}",
 					"important": true
-				}
-			]
-		},
-		"ms-azure-devops.azure-pipelines": {
-			"onFileOpen": [
-				{
-					"pathGlob": "{**/azure-pipelines.yaml}",
-					"important": true
-				}
-			]
-		},
-		"msazurermtools.azurerm-vscode-tools": {
-			"onFileOpen": [
-				{
-					"pathGlob": "{**/azuredeploy.json}",
-					"important": true
-				}
-			]
-		},
-		"ms-vscode-remote.remote-containers": {
-			"onFileOpen": [
-				{
-					"pathGlob": "{**/devcontainer.json}",
-					"important": true
-				}
-			]
-		},
-		"ms-azuretools.vscode-bicep": {
-			"onFileOpen": [
-				{
-					"pathGlob": "{**/*.bicep}",
-					"important": true,
-					"whenNotInstalled": [
-						"ms-azuretools.rad-vscode-bicep"
-					]
 				}
 			]
 		},
@@ -581,6 +571,14 @@
 				}
 			]
 		},
+		"swiftlang.swift-vscode": {
+			"onFileOpen": [
+				{
+					"pathGlob": "{**/*.swift,**/*.swiftinterface}",
+					"important": true
+				}
+			]
+		},
 		"DotJoshJohnson.xml": {
 			"onFileOpen": [
 				{
@@ -606,13 +604,6 @@
 			"onFileOpen": [
 				{
 					"pathGlob": "{**/*.sql}"
-				}
-			]
-		},
-		"usqlextpublisher.usql-vscode-ext": {
-			"onFileOpen": [
-				{
-					"pathGlob": "{**/*.usql}"
 				}
 			]
 		},
@@ -651,13 +642,6 @@
 				}
 			]
 		},
-		"ms-azuretools.vscode-azureterraform": {
-			"onFileOpen": [
-				{
-					"pathGlob": "**/*.tf"
-				}
-			]
-		},
 		"HashiCorp.terraform": {
 			"onFileOpen": [
 				{
@@ -669,13 +653,6 @@
 			"onFileOpen": [
 				{
 					"pathGlob": "{**/Chart.yaml}"
-				}
-			]
-		},
-		"Oracle.oracledevtools": {
-			"onFileOpen": [
-				{
-					"pathGlob": "{**/*.sql}"
 				}
 			]
 		},
@@ -693,19 +670,18 @@
 				}
 			]
 		},
-		"GitHub.copilot": {
-			"onFileOpen": [
-				{
-					"pathGlob": "{**/*.ts,**/*.tsx,**/*.js,**/*.py,**/*.go,**/*.rb}"
-				}
-			],
-			"onSettingsEditorOpen": {}
-		},
 		"GitHub.vscode-github-actions": {
 			"onFileOpen": [
 				{
 					"pathGlob": "{**/.github/workflows/*.yml}",
 					"important": true
+				}
+			]
+		},
+		"circleci.circleci": {
+			"onFileOpen": [
+				{
+					"pathGlob": "{**/.circleci/config.yml}"
 				}
 			]
 		},
@@ -721,6 +697,22 @@
 			"onFileOpen": [
 				{
 					"pathGlob": "**/*.pdf",
+					"important": true
+				}
+			]
+		},
+		"Redis.redis-for-vscode": {
+			"onFileOpen": [
+				{
+					"pathGlob": "{**/redis.*,**/redis-server.*,**/redis_*,**/redisinsight.*}",
+					"important": true
+				}
+			]
+		},
+		"SonarSource.sonarlint-vscode": {
+			"onFileOpen": [
+				{
+					"pathGlob": "{**/sonar-project.properties,**/sonarcloud.properties,**/sonarlint.*}",
 					"important": true
 				}
 			]
@@ -749,7 +741,6 @@
 		"ms-vscode.vs-keybindings",
 		"ms-vscode.notepadplusplus-keybindings",
 		"k--kato.intellij-idea-keybindings",
-		"lfs.vscode-emacs-friendly",
 		"alphabotsec.vscode-eclipse-keybindings",
 		"alefragnani.delphi-keybindings"
 	],
@@ -791,7 +782,8 @@
 					"important": true,
 					"isExtensionPack": true,
 					"whenNotInstalled": [
-						"ASF.apache-netbeans-java"
+						"ASF.apache-netbeans-java",
+						"Oracle.oracle-java"
 					]
 				},
 				"vmware.vscode-boot-dev-pack": {
@@ -809,7 +801,8 @@
 					"important": true,
 					"isExtensionPack": true,
 					"whenNotInstalled": [
-						"ASF.apache-netbeans-java"
+						"ASF.apache-netbeans-java",
+						"Oracle.oracle-java"
 					]
 				}
 			}
@@ -1224,19 +1217,14 @@
 		]
 	},
 	"extensionAllowedBadgeProviders": [
-		"api.bintray.com",
 		"api.travis-ci.com",
-		"api.travis-ci.org",
 		"app.fossa.io",
 		"badge.buildkite.com",
 		"badge.fury.io",
-		"badge.waffle.io",
 		"badgen.net",
 		"badges.frapsoft.com",
 		"badges.gitter.im",
-		"badges.greenkeeper.io",
 		"cdn.travis-ci.com",
-		"cdn.travis-ci.org",
 		"ci.appveyor.com",
 		"circleci.com",
 		"cla.opensource.microsoft.com",
@@ -1249,8 +1237,6 @@
 		"dev.azure.com",
 		"docs.rs",
 		"flat.badgen.net",
-		"gemnasium.com",
-		"githost.io",
 		"gitlab.com",
 		"godoc.org",
 		"goreportcard.com",
@@ -1263,9 +1249,7 @@
 		"travis-ci.com",
 		"travis-ci.org",
 		"visualstudio.com",
-		"vsmarketplacebadge.apphb.com",
-		"www.bithound.io",
-		"www.versioneye.com"
+		"vsmarketplacebadge.apphb.com"
 	],
 	"extensionAllowedBadgeProvidersRegex": [
 		"^https:\\/\\/github\\.com\\/[^/]+\\/[^/]+\\/(actions\\/)?workflows\\/.*badge\\.svg"
