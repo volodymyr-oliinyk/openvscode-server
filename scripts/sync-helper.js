@@ -5,16 +5,14 @@ const fs = require('fs');
 const https = require('https');
 
 const pickKeys = [
-	'extensionTips',
-	'extensionImportantTips',
+	'extensionRecommendations',
 	'keymapExtensionTips',
 	'configBasedExtensionTips',
 	'extensionKeywords',
 	'extensionAllowedBadgeProviders',
 	'extensionAllowedBadgeProvidersRegex',
-	'extensionAllowedProposedApi',
-	'extensionEnabledApiProposals',
 	'extensionKind',
+	'extensionPointExtensionKind',
 	'languageExtensionTips'
 ];
 
@@ -93,10 +91,20 @@ const propiertaryExtension = [
 	'ms-python.vscode-pylance',
 	'ms-vscode.azure-sphere-tools-ui',
 	'ms-azuretools.vscode-azureappservice',
+	'ms-vscode.vscode-chat-customizations-evaluations',
+	'ms-toolsai.datawrangler',
+	'ms-toolsai.prompty',
+	'quantum.qsharp-lang-vscode',
+	'cake-build.cake-vscode',
+	'vsciot-vscode.vscode-arduino',
+	'Oracle.oracledevtools',
+	'GitHub.copilot-chat',
+	'lfs.vscode-emacs-friendly',
 ];
 
 const openvsxExtensionMap = {
-	'ms-dotnettools.csharp': 'muhammad-sammy.csharp'
+	'ms-dotnettools.csharp': 'muhammad-sammy.csharp',
+	'ms-dotnettools.csdevkit': 'muhammad-sammy.csharp'
 };
 
 function filterObj(obj, predicate) {
@@ -136,6 +144,14 @@ async function start() {
 		} else if (typeof newValue === 'object' && newValue !== null) {
 			newValue = renameObjKey(newValue, k => openvsxExtensionMap[k] ?? k);
 			newValue = filterObj(newValue, k => !propiertaryExtension.includes(k));
+			if (key === 'configBasedExtensionTips') {
+				// extension ids are nested under `recommendations` here
+				for (const tip of Object.values(newValue)) {
+					tip.recommendations = renameObjKey(tip.recommendations ?? {}, k => openvsxExtensionMap[k] ?? k);
+					tip.recommendations = filterObj(tip.recommendations, k => !propiertaryExtension.includes(k));
+				}
+				newValue = filterObj(newValue, (_, tip) => Object.keys(tip.recommendations).length > 0);
+			}
 		}
 		branchProduct[key] = newValue;
 	}
@@ -187,11 +203,9 @@ async function checkProductExtensions(product) {
 	for (let key in product.configBasedExtensionTips) {
 		Object.keys(product.configBasedExtensionTips[key].recommendations ?? {}).forEach(id => uniqueExtIds.add(id));
 	}
-	Object.keys(product.extensionImportantTips).forEach(id => uniqueExtIds.add(id));
-	Object.keys(product.extensionTips).forEach(id => uniqueExtIds.add(id));
-	Object.keys(product.extensionEnabledApiProposals).forEach(id => uniqueExtIds.add(id));
-	product.keymapExtensionTips.forEach(id => uniqueExtIds.add(id));
-	product.languageExtensionTips.forEach(id => uniqueExtIds.add(id));
+	Object.keys(product.extensionRecommendations ?? {}).forEach(id => uniqueExtIds.add(id));
+	(product.keymapExtensionTips ?? []).forEach(id => uniqueExtIds.add(id));
+	(product.languageExtensionTips ?? []).forEach(id => uniqueExtIds.add(id));
 
 	// Check if extensions exists in openvsx
 	for (let id of uniqueExtIds) {
@@ -208,14 +222,20 @@ async function checkProductExtensions(product) {
 	}
 }
 
-async function urlExists(url) {
-	return new Promise((resolve, reject) => {
-		https.get(url, res => {
-			resolve(res.statusCode === 200);
-		}).on('error', error => {
-			reject(error);
+async function urlExists(url, retries = 3) {
+	const status = await new Promise((resolve, reject) => {
+		const req = https.get(url, { timeout: 20000 }, res => {
+			res.resume();
+			resolve(res.statusCode);
 		});
+		req.on('timeout', () => req.destroy(new Error(`timeout: ${url}`)));
+		req.on('error', reject);
 	});
+	if (status === 503 && retries > 0) {
+		await new Promise(resolve => setTimeout(resolve, 3000));
+		return urlExists(url, retries - 1);
+	}
+	return status === 200;
 }
 
 start().catch(console.error);
