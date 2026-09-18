@@ -413,8 +413,16 @@ export class WebClientServer {
 			} catch (err) {/* Ignore Error */ }
 		}
 
+		// Deployment-provided setting defaults (any scope, including application scope, which
+		// neither machine settings nor extension `configurationDefaults` can supply).
+		let configurationDefaults: Record<string, unknown> | undefined;
+		try {
+			configurationDefaults = JSON.parse((await promises.readFile(join(APP_ROOT, 'configuration.defaults.json'))).toString());
+		} catch (err) {/* Ignore Error */ }
+
 		const workbenchWebConfiguration = {
 			remoteAuthority,
+			configurationDefaults,
 			serverBasePath: basePath,
 			_wrapWebWorkerExtHostInIframe,
 			developmentOptions: { enableSmokeTestDriver: this._environmentService.args['enable-smoke-test-driver'] ? true : undefined, logLevel: this._logService.getLevel() },
