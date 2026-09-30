@@ -25,7 +25,7 @@ import { AgentSdkSetupChannel } from '../agentSdkSetupChannel.js';
 import { decodeProviderData, encodeProviderData, type IPersistedChat } from '../agentChatBackings.js';
 import { AgentHostConfigKey, agentHostCustomizationConfigSchema } from '../../common/agentHostCustomizationConfig.js';
 import { AgentHostAutoApprovePolicyRestrictedConfigKey, AgentHostClaudeMultiRootEnabledConfigKey, createSchema, platformRootSchema, platformSessionSchema, schemaProperty } from '../../common/agentHostSchema.js';
-import { ClaudePermissionMode, ClaudeSessionConfigKey, narrowClaudePermissionMode } from '../../common/claudeSessionConfigKeys.js';
+import { ClaudePermissionMode, ClaudeSessionConfigKey, narrowClaudeConfigDir, narrowClaudePermissionMode } from '../../common/claudeSessionConfigKeys.js';
 import { createClaudeThinkingLevelSchema, isClaudeEffortLevel } from '../../common/claudeModelConfig.js';
 import { SessionConfigKey } from '../../common/sessionConfigKeys.js';
 import { AgentChatMigrationDeferred, type AgentChatMigrationResult, AgentProvider, AgentSession, AgentSignal, CLAUDE_AGENT_PROVIDER_ID, IActiveClient, IAgent, IAgentChatContext, IAgentChatDataChange, IAgentChatMetadata, type IAgentChatMetadataOptions, IAgentChats, IAgentChatConfigCompletionsParams, IAgentCreateChatOptions, IAgentCreateChatResult, IAgentDescriptor, IAgentDiscoveredChat, IAgentMaterializeChatEvent, IAgentModelInfo, IAgentResolveChatConfigParams, IAgentSessionProjectInfo, IAgentSpawnChatEvent, IAgentSpawnedChatParent, SubagentChatSignal, resolveAgentChatContext, resolveAgentHostCustomizations, resolveAgentHostInstructions, resolveSubagentChatParent } from '../../common/agent.js';
@@ -1301,6 +1301,7 @@ export class ClaudeAgent extends Disposable implements IAgent {
 				transport: transportKind,
 				workingDirectories: session.workingDirectories,
 				...(session.provisionalAgent ? { agent: session.provisionalAgent } : {}),
+				...(session.claudeConfigDir ? { claudeConfigDir: session.claudeConfigDir } : {}),
 			});
 		} catch (err) {
 			this._logService.error(`[Claude] Failed to persist customization directory; aborting materialize`, err);
@@ -1478,6 +1479,9 @@ export class ClaudeAgent extends Disposable implements IAgent {
 		const inheritedModel = model ?? liveSource?.provisionalModel ?? sourceOverlay.model ?? backingModel;
 		const agent = options?.agent ?? liveSource?.provisionalAgent ?? sourceOverlay.agent;
 		const permissionMode = narrowClaudePermissionMode(options?.config?.[ClaudeSessionConfigKey.PermissionMode]) ?? liveSource?.permissionModeFallback ?? sourceOverlay.permissionMode;
+		// Zoral fork: the requesting window's user; else the source's, since a
+		// fork continues the same user's conversation.
+		const claudeConfigDir = narrowClaudeConfigDir(options?.config?.[ClaudeSessionConfigKey.ConfigDir]) ?? liveSource?.claudeConfigDir ?? sourceOverlay.claudeConfigDir;
 
 		// Resolve the inherited conversation's working directories now so we
 		// fail fast rather than at the first `sendMessage`. The forked
@@ -1501,6 +1505,7 @@ export class ClaudeAgent extends Disposable implements IAgent {
 			...(inheritedModel ? { model: inheritedModel } : {}),
 			...(permissionMode ? { permissionMode } : {}),
 			...(agent ? { agent } : {}),
+			...(claudeConfigDir ? { claudeConfigDir } : {}),
 			workingDirectories,
 		});
 		const project = await this._resolveProject(workingDirectory);
@@ -1792,7 +1797,9 @@ export class ClaudeAgent extends Disposable implements IAgent {
 			project,
 			model,
 			overlay.agent,
-			undefined,
+			// A cold resume has no create-time config bag; the user's Claude folder
+			// (Zoral fork) comes back from the overlay the first materialize wrote.
+			overlay.claudeConfigDir ? { [ClaudeSessionConfigKey.ConfigDir]: overlay.claudeConfigDir } : undefined,
 			new PendingRequestRegistry<CallToolResult>(),
 			permissionMode,
 			this._instantiationService,

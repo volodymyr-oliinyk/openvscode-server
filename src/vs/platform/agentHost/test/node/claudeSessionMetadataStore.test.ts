@@ -135,6 +135,25 @@ suite('ClaudeSessionMetadataStore', () => {
 		assert.strictEqual(overlay.permissionMode, undefined);
 	});
 
+	test('write then read round-trips the Claude config folder, and it alone marks a known session', async () => {
+		const store = createStore(disposables, createSessionDataService(new TestSessionDatabase()));
+
+		await store.write(SESSION_URI, { claudeConfigDir: '/workspace/.vscode/u-jdoe/claude' });
+		const overlay = await store.read(SESSION_URI);
+
+		assert.deepStrictEqual([overlay.claudeConfigDir, await store.hasKnownSession(SESSION_URI)], ['/workspace/.vscode/u-jdoe/claude', true]);
+	});
+
+	test('read narrows a relative Claude config folder to undefined', async () => {
+		const db = new TestSessionDatabase();
+		await db.setMetadata('claude.configDir', 'relative/claude');
+		const store = createStore(disposables, createSessionDataService(db));
+
+		const overlay = await store.read(SESSION_URI);
+
+		assert.strictEqual(overlay.claudeConfigDir, undefined);
+	});
+
 	test('read tolerates legacy plain-string model entries (pre-codec)', async () => {
 		const db = new TestSessionDatabase();
 		await db.setMetadata('claude.model', 'claude-sonnet-4');

@@ -98,6 +98,13 @@ export interface IBuildOptionsInput {
 	readonly telemetry?: IAgentHostNativeOTelConfig;
 	readonly traceContext?: IAgentHostTraceContext;
 	readonly getUserPromptAdditionalContext?: () => string | undefined;
+	/**
+	 * The user's Claude folder (Zoral fork, `ClaudeSessionConfigKey.ConfigDir`).
+	 * Set as `CLAUDE_CONFIG_DIR` on the CLI process, so the session keeps that
+	 * user's history and settings, and the image's `apiKeyHelper` reads that
+	 * user's credential from it. Omitted, the CLI uses its default under `HOME`.
+	 */
+	readonly claudeConfigDir?: string;
 }
 
 /**
@@ -125,6 +132,11 @@ export async function buildOptions(
 	const subprocessEnv = buildSubprocessEnv(isProxy);
 	const telemetryEnv = buildClaudeTelemetryEnv(input.telemetry, input.traceContext);
 	Object.assign(subprocessEnv, telemetryEnv);
+	if (input.claudeConfigDir) {
+		// On the process, not in `settings.env`: the CLI reads its config
+		// directory at startup, and its apiKeyHelper inherits the process env.
+		subprocessEnv['CLAUDE_CONFIG_DIR'] = input.claudeConfigDir;
+	}
 	const resolvedRgDiskPath = await rgDiskPath();
 	const settingsEnv: Record<string, string> = {
 		...telemetryEnv,

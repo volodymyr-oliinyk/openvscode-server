@@ -22,6 +22,23 @@
 export const enum ClaudeSessionConfigKey {
 	/** `'permissionMode'` — Claude SDK approval mode. */
 	PermissionMode = 'permissionMode',
+	/**
+	 * `'zoral.claudeConfigDir'` — the user's own Claude folder, which the
+	 * session's CLI runs with as `CLAUDE_CONFIG_DIR` (Zoral fork). The agent host
+	 * is one process shared by every window, so it cannot tell users apart; the
+	 * renderer supplies this from the workspace setting of the same name, which
+	 * Zoral Management Studio writes into each user's workspace file along with
+	 * a credential in that folder. Not advertised in the schema: nothing to pick.
+	 */
+	ConfigDir = 'zoral.claudeConfigDir',
+}
+
+/**
+ * Narrows a session-config value to a usable {@link ClaudeSessionConfigKey.ConfigDir}:
+ * an absolute POSIX path, or `undefined`.
+ */
+export function narrowClaudeConfigDir(raw: unknown): string | undefined {
+	return typeof raw === 'string' && raw.startsWith('/') ? raw : undefined;
 }
 
 /**

@@ -5,7 +5,7 @@
 
 import type { SDKSessionInfo } from '@anthropic-ai/claude-agent-sdk';
 import { URI } from '../../../../base/common/uri.js';
-import { ClaudePermissionMode, narrowClaudePermissionMode } from '../../common/claudeSessionConfigKeys.js';
+import { ClaudePermissionMode, narrowClaudeConfigDir, narrowClaudePermissionMode } from '../../common/claudeSessionConfigKeys.js';
 import { IAgentChatMetadata } from '../../common/agent.js';
 import { ISessionDataService } from '../../common/sessionDataService.js';
 import type { AgentSelection, ModelSelection } from '../../common/state/protocol/state.js';
@@ -37,6 +37,13 @@ export interface IClaudeSessionOverlay {
 	 * future per-session-transport feature land without a data migration.
 	 */
 	readonly transport?: 'proxy' | 'native';
+	/**
+	 * The user's Claude folder the session's CLI runs with as
+	 * `CLAUDE_CONFIG_DIR` (Zoral fork, see `ClaudeSessionConfigKey.ConfigDir`).
+	 * Kept here because a cold resume rebuilds the session from this overlay,
+	 * without the create-time config bag that first carried it.
+	 */
+	readonly claudeConfigDir?: string;
 }
 
 /**
@@ -51,6 +58,7 @@ export interface IClaudeSessionOverlayUpdate {
 	readonly agent?: AgentSelection | null;
 	readonly workingDirectories?: readonly URI[];
 	readonly transport?: 'proxy' | 'native';
+	readonly claudeConfigDir?: string;
 }
 
 /**
@@ -77,6 +85,7 @@ export class ClaudeSessionMetadataStore {
 	private static readonly KEY_AGENT = 'claude.agent';
 	private static readonly KEY_TRANSPORT = 'claude.transport';
 	private static readonly KEY_WORKING_DIRECTORIES = 'claude.workingDirectories';
+	private static readonly KEY_CONFIG_DIR = 'claude.configDir';
 
 	constructor(
 		@ISessionDataService private readonly _sessionDataService: ISessionDataService,
@@ -97,6 +106,7 @@ export class ClaudeSessionMetadataStore {
 				[ClaudeSessionMetadataStore.KEY_AGENT]: true,
 				[ClaudeSessionMetadataStore.KEY_TRANSPORT]: true,
 				[ClaudeSessionMetadataStore.KEY_WORKING_DIRECTORIES]: true,
+				[ClaudeSessionMetadataStore.KEY_CONFIG_DIR]: true,
 			});
 			return Object.values(metadata).some(value => value !== undefined);
 		} finally {
@@ -139,6 +149,9 @@ export class ClaudeSessionMetadataStore {
 					JSON.stringify(fields.workingDirectories.map(d => d.toString())),
 				));
 			}
+			if (fields.claudeConfigDir) {
+				work.push(db.setMetadata(ClaudeSessionMetadataStore.KEY_CONFIG_DIR, fields.claudeConfigDir));
+			}
 			await Promise.all(work);
 		} finally {
 			dbRef.dispose();
@@ -158,13 +171,14 @@ export class ClaudeSessionMetadataStore {
 			return {};
 		}
 		try {
-			const [customizationDirectoryRaw, modelRaw, permissionModeRaw, agentRaw, transportRaw, workingDirectoriesRaw] = await Promise.all([
+			const [customizationDirectoryRaw, modelRaw, permissionModeRaw, agentRaw, transportRaw, workingDirectoriesRaw, configDirRaw] = await Promise.all([
 				ref.object.getMetadata(ClaudeSessionMetadataStore.KEY_CUSTOMIZATION_DIRECTORY),
 				ref.object.getMetadata(ClaudeSessionMetadataStore.KEY_MODEL),
 				ref.object.getMetadata(ClaudeSessionMetadataStore.KEY_PERMISSION_MODE),
 				ref.object.getMetadata(ClaudeSessionMetadataStore.KEY_AGENT),
 				ref.object.getMetadata(ClaudeSessionMetadataStore.KEY_TRANSPORT),
 				ref.object.getMetadata(ClaudeSessionMetadataStore.KEY_WORKING_DIRECTORIES),
+				ref.object.getMetadata(ClaudeSessionMetadataStore.KEY_CONFIG_DIR),
 			]);
 			return {
 				customizationDirectory: customizationDirectoryRaw ? URI.parse(customizationDirectoryRaw) : undefined,
@@ -173,6 +187,7 @@ export class ClaudeSessionMetadataStore {
 				agent: parseAgentSelection(agentRaw),
 				transport: transportRaw === 'proxy' || transportRaw === 'native' ? transportRaw : undefined,
 				workingDirectories: parseWorkingDirectories(workingDirectoriesRaw),
+				claudeConfigDir: narrowClaudeConfigDir(configDirRaw),
 			};
 		} finally {
 			ref.dispose();

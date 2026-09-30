@@ -65,6 +65,7 @@ import type { ResolveSessionConfigResult } from '../../../../../../platform/agen
 import { areSessionWorkingDirectoriesEqual } from '../../../../../../platform/agentHost/common/state/sessionWorkingDirectories.js';
 import { withSessionMultiRootMetadata } from '../../../../../../platform/agentHost/common/state/sessionState.js';
 import { IConfigurationService } from '../../../../../../platform/configuration/common/configuration.js';
+import { withZoralClaudeConfigDir } from '../../../../../services/zoral/common/zoralClaudeConfigDir.js';
 import { InstantiationType, registerSingleton } from '../../../../../../platform/instantiation/common/extensions.js';
 import { createDecorator } from '../../../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../../../platform/log/common/log.js';
@@ -652,7 +653,7 @@ export class AgentHostUntitledProvisionalSessionService extends Disposable imple
 					session: candidate,
 					_meta: this.getInitialSessionMetadata(),
 					workingDirectories,
-					config,
+					config: withZoralClaudeConfigDir(entry.provider, config, this._configurationService),
 					progressToken: generateUuid(),
 				});
 			} catch (err) {
@@ -769,7 +770,7 @@ export class AgentHostUntitledProvisionalSessionService extends Disposable imple
 						session: newBackendSession,
 						_meta: this.getInitialSessionMetadata(),
 						workingDirectories: targetWorkingDirectories,
-						config,
+						config: withZoralClaudeConfigDir(provider, config, this._configurationService),
 						...(imported ? { model: imported.model, importConversation: { turns: imported.turns, model: imported.model } } : {}),
 						progressToken: generateUuid(),
 					});

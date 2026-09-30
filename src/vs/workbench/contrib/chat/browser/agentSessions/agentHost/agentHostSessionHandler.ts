@@ -54,6 +54,7 @@ import { buildChatUri, buildDefaultChatUri, buildSubagentChatUri, ChatOriginKind
 import { ExtensionIdentifier } from '../../../../../../platform/extensions/common/extensions.js';
 import { IInstantiationService } from '../../../../../../platform/instantiation/common/instantiation.js';
 import { IConfigurationService } from '../../../../../../platform/configuration/common/configuration.js';
+import { withZoralClaudeConfigDir } from '../../../../../services/zoral/common/zoralClaudeConfigDir.js';
 import { ILogService } from '../../../../../../platform/log/common/log.js';
 import { IOpenerService } from '../../../../../../platform/opener/common/opener.js';
 import { packErrorForTelemetry } from '../../../../../../platform/telemetry/common/errorTelemetry.js';
@@ -5621,7 +5622,7 @@ export class AgentHostSessionHandler extends Disposable implements IChatSessionC
 				model,
 				provider: this._config.provider,
 				workingDirectories,
-				config,
+				config: withZoralClaudeConfigDir(this._config.provider, config, this._configurationService),
 				importConversation,
 				activeClient,
 				progressToken,
@@ -5640,7 +5641,7 @@ export class AgentHostSessionHandler extends Disposable implements IChatSessionC
 						model,
 						provider: this._config.provider,
 						workingDirectories,
-						config,
+						config: withZoralClaudeConfigDir(this._config.provider, config, this._configurationService),
 						importConversation,
 						activeClient,
 						progressToken,

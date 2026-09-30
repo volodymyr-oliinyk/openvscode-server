@@ -17,7 +17,7 @@ import { IInstantiationService } from '../../../instantiation/common/instantiati
 import { ILogService } from '../../../log/common/log.js';
 import { IAgentConfigurationService } from '../agentConfigurationService.js';
 import { ISyncedCustomization } from '../../common/agentPluginManager.js';
-import { ClaudePermissionMode } from '../../common/claudeSessionConfigKeys.js';
+import { ClaudePermissionMode, ClaudeSessionConfigKey, narrowClaudeConfigDir } from '../../common/claudeSessionConfigKeys.js';
 import { ClaudeRuntimeEffortLevel, toRuntimeEffortLevel, resolveClaudeEffort } from '../../common/claudeModelConfig.js';
 import { AgentSignal, IAgentSessionProjectInfo } from '../../common/agent.js';
 import type { IAgentHostClientTelemetryContext } from '../../common/agentHostTelemetry.js';
@@ -187,6 +187,14 @@ export class ClaudeAgentSession extends Disposable {
 	private _provisionalAgent: AgentSelection | undefined;
 	/** Pre-materialize `IAgentCreateChatOptions.config` bag. Read at materialize time. */
 	readonly provisionalConfig: Record<string, unknown> | undefined;
+	/**
+	 * The user's Claude folder from the create-time config bag (Zoral fork,
+	 * `ClaudeSessionConfigKey.ConfigDir`), or from the overlay on a cold resume.
+	 * Every CLI this session starts runs with it as `CLAUDE_CONFIG_DIR`.
+	 */
+	get claudeConfigDir(): string | undefined {
+		return narrowClaudeConfigDir(this.provisionalConfig?.[ClaudeSessionConfigKey.ConfigDir]);
+	}
 	/** Resolved project metadata captured at create time (if any). */
 	readonly project: IAgentSessionProjectInfo | undefined;
 	/** Always-present abort controller; wired into `Options.abortController` at materialize time. */
@@ -649,6 +657,7 @@ export class ClaudeAgentSession extends Disposable {
 				traceContext,
 				getUserPromptAdditionalContext: () => this._hostInstructions?.join('\n\n'),
 				onPreToolUse: (toolName, input) => this._restrictAgentMergeGitHubTool(toolName, input),
+				claudeConfigDir: this.claudeConfigDir,
 			},
 			ctx.transport,
 			data => this._logService.error(`[Claude SDK stderr] ${data}`),
@@ -764,6 +773,7 @@ export class ClaudeAgentSession extends Disposable {
 						traceContext,
 						getUserPromptAdditionalContext: () => this._hostInstructions?.join('\n\n'),
 						onPreToolUse: (toolName, input) => this._restrictAgentMergeGitHubTool(toolName, input),
+						claudeConfigDir: this.claudeConfigDir,
 					},
 					rebuildTransport,
 					data => this._logService.error(`[Claude SDK stderr] ${data}`),

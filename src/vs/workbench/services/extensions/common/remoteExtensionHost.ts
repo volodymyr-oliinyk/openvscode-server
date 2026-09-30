@@ -24,6 +24,8 @@ import { isLoggingOnly } from '../../../../platform/telemetry/common/telemetryUt
 import { IWorkspaceContextService, WorkbenchState } from '../../../../platform/workspace/common/workspace.js';
 import { IWorkbenchEnvironmentService } from '../../environment/common/environmentService.js';
 import { IDefaultLogLevelsService } from '../../log/common/defaultLogLevels.js';
+import { getZoralClaudeConfigDir } from '../../zoral/common/zoralClaudeConfigDir.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { parseExtensionDevOptions } from './extensionDevOptions.js';
 import { IExtensionHostInitData, MessageType, UIKind, createMessageOfType, isMessageOfType } from './extensionHostProtocol.js';
 import { RemoteRunningLocation } from './extensionRunningLocation.js';
@@ -75,6 +77,7 @@ export class RemoteExtensionHost extends Disposable implements IExtensionHost {
 		@IProductService private readonly _productService: IProductService,
 		@ISignService private readonly _signService: ISignService,
 		@IDefaultLogLevelsService private readonly _defaultLogLevelsService: IDefaultLogLevelsService,
+		@IConfigurationService private readonly _configurationService: IConfigurationService,
 	) {
 		super();
 		this.remoteAuthority = this._initDataProvider.remoteAuthority;
@@ -103,12 +106,20 @@ export class RemoteExtensionHost extends Disposable implements IExtensionHost {
 		};
 		return this.remoteAuthorityResolverService.resolveAuthority(this._initDataProvider.remoteAuthority).then((resolverResult) => {
 
+			// Zoral fork: the user's Claude folder from the workspace file, so the
+			// Claude Code extension and git in this window run as this user even
+			// when the server is shared (see zoralClaudeConfigDir.ts).
+			const claudeConfigDir = getZoralClaudeConfigDir(this._configurationService);
 			const startParams: IRemoteExtensionHostStartParams = {
 				language: platform.language,
 				debugId: this._environmentService.debugExtensionHost.debugId,
 				break: this._environmentService.debugExtensionHost.break,
 				port: this._environmentService.debugExtensionHost.port,
-				env: { ...this._environmentService.debugExtensionHost.env, ...resolverResult.options?.extensionHostEnv },
+				env: {
+					...this._environmentService.debugExtensionHost.env,
+					...resolverResult.options?.extensionHostEnv,
+					...(claudeConfigDir ? { CLAUDE_CONFIG_DIR: claudeConfigDir } : {}),
+				},
 			};
 
 			const extDevLocs = this._environmentService.extensionDevelopmentLocationURI;
