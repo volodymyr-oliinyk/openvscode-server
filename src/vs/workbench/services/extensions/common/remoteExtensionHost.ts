@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { raceTimeout } from '../../../../base/common/async.js';
 import { VSBuffer } from '../../../../base/common/buffer.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
@@ -89,6 +90,20 @@ export class RemoteExtensionHost extends Disposable implements IExtensionHost {
 		this._isExtensionDevHost = devOpts.isExtensionDevHost;
 	}
 
+	/**
+	 * Zoral fork: the user's Claude folder from the workspace file, so the Claude
+	 * Code extension and git in this window run as this user even when the
+	 * server is shared (see zoralClaudeConfigDir.ts). A workspace file on the
+	 * remote is read only after the window starts, and until then the
+	 * configuration service answers from its cache, which a new browser does
+	 * not have. So wait for the workspace to be complete, but not for long: a
+	 * window without the setting starts as it always did.
+	 */
+	private async _getZoralClaudeConfigDir(): Promise<string | undefined> {
+		await raceTimeout(this._contextService.getCompleteWorkspace(), 10_000);
+		return getZoralClaudeConfigDir(this._configurationService);
+	}
+
 	public start(): Promise<IMessagePassingProtocol> {
 		const options: IConnectionOptions = {
 			commit: this._productService.commit,
@@ -104,12 +119,11 @@ export class RemoteExtensionHost extends Disposable implements IExtensionHost {
 			logService: this._logService,
 			ipcLogger: null
 		};
-		return this.remoteAuthorityResolverService.resolveAuthority(this._initDataProvider.remoteAuthority).then((resolverResult) => {
+		return Promise.all([
+			this.remoteAuthorityResolverService.resolveAuthority(this._initDataProvider.remoteAuthority),
+			this._getZoralClaudeConfigDir(),
+		]).then(([resolverResult, claudeConfigDir]) => {
 
-			// Zoral fork: the user's Claude folder from the workspace file, so the
-			// Claude Code extension and git in this window run as this user even
-			// when the server is shared (see zoralClaudeConfigDir.ts).
-			const claudeConfigDir = getZoralClaudeConfigDir(this._configurationService);
 			const startParams: IRemoteExtensionHostStartParams = {
 				language: platform.language,
 				debugId: this._environmentService.debugExtensionHost.debugId,
